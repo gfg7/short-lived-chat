@@ -1,0 +1,7 @@
+map $SERVER_PORT $SERVER_PORT {
+  default "$SERVER_PORT";
+}
+
+map $SERVER_HOST $SERVER_HOST {
+  default "$SERVER_HOST";
+}

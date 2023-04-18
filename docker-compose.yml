@@ -1,0 +1,56 @@
+version: '3.4'
+
+services:
+  server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: server
+    environment:
+      - REDIS_HOST=redis:6379
+    ports:
+    - "80"
+    networks:
+    - livechat
+    depends_on:
+        redis:
+            condition: service_healthy
+    healthcheck:
+       test: curl --false http://server:80/health || exit
+       interval: 10s
+       retries: 5
+       timeout: 5s
+       start_period: 30s
+  redis:
+    image: redis
+    container_name: redis
+    ports:
+      - "6379:6379"
+    env_file: redis.env
+    command: redis-server --notify-keyspace-events Kx
+    networks:
+    - livechat
+  balancer:
+      image: nginx:stable-alpine
+      container_name: nginx
+      ports:
+      - 8181:80
+      networks:
+      - livechat
+      env_file: nginx.env
+      external_links:
+      - server
+      volumes:
+      - ./nginx/variables.template:/etc/nginx/templates/variables.template:ro
+      - ./nginx/nginx.conf:/etc/nginx/templates/default.conf.template:rw
+      depends_on:
+          server:
+              condition: service_healthy
+      healthcheck:
+        test: curl --false http://nginx:8080 || exit
+        interval: 10s
+        retries: 5
+        timeout: 5s
+networks:
+  livechat:
+    driver: bridge
