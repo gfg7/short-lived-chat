@@ -12,5 +12,5 @@ namespace SimpleLiveChat.Interfaces.PublisherSubscrib
         Task Consume(string channel, T @event);
     }
 
-    public interface IDelayed<T> : IConsumer<T> where T : notnull { }
+    public interface IDelayed { }
 }

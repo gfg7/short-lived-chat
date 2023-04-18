@@ -11,7 +11,7 @@ using SimpleLiveChat.Services.Hubs;
 
 namespace SimpleLiveChat.Services.Consumers
 {
-    public class EventConsumer : HubEventConsumer, IDelayed<IExternalHubEvent>
+    public class EventConsumer : HubEventConsumer, IDelayed
     {
         public override string Channel => Environment.GetEnvironmentVariable("DEFAULT_TOPIC");
         public EventConsumer(ISubscriberProvider provider, IServiceProvider serviceProvider, ILogger<EventConsumer> logger)

@@ -34,7 +34,7 @@ namespace SimpleLiveChat.Services.Configuration
 
         public async Task Start(IServiceProvider provider)
         {
-            Func<Type, bool> predicate = x => !x.IsAbstract && !x.IsInterface && typeof(IBaseConsumer).IsAssignableFrom(x) && !typeof(IDelayed<>).IsAssignableFrom(x);
+            Func<Type, bool> predicate = x => !x.IsAbstract && !x.IsInterface && typeof(IBaseConsumer).IsAssignableFrom(x) && !typeof(IDelayed).IsAssignableFrom(x);
             await Initialize(provider, predicate);
         }
     }

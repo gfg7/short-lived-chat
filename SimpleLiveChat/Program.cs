@@ -50,8 +50,6 @@ if (!app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-app.UseDefaultFiles();
-app.UseStaticFiles();
 app.UseAuthentication();
 app.UseAuthorization();
 
@@ -72,6 +70,11 @@ app.MapPost("/startup", async (string username, HttpContext context) =>
     var principal = new ClaimsPrincipal(identity);
 
     await context.SignInAsync(principal);
+});
+
+app.MapDelete("/leave", async (HttpContext context) =>
+{
+    await context.SignOutAsync();
 });
 
 app.Run();
