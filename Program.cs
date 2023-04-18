@@ -1,36 +1,51 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
-using SimpleLiveChat.Services;
+using Microsoft.AspNetCore.SignalR;
+using SimpleLiveChat.Interfaces.PublisherSubscriber;
+using SimpleLiveChat.Interfaces.Repository;
+using SimpleLiveChat.Services.Configuration;
+using SimpleLiveChat.Services.Hubs;
+using SimpleLiveChat.Services.Hubs.Chats;
+using SimpleLiveChat.Services.Publisher;
+using SimpleLiveChat.Services.Repository;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
+builder.Services.AddHealthChecks();
 builder.Services.AddSignalR();
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddStackExchangeRedisCache(o =>
+
+builder.Services.AddHostedService<ServerStateHandler>();
+
+builder.Services.AddLogging();
+builder.Services.AddSingleton<IDatabaseProvider, RedisConnection>();
+builder.Services.AddSingleton<ISubscriberProvider>(x => (RedisConnection)x.GetRequiredService<IDatabaseProvider>());
+
+builder.Services.RegisterConsumers();
+builder.Services.AddScoped(typeof(IPublisher<>),typeof(EventPublisher<>));
+
+// создаются 2 разных инстанса RedisRepository :(
+builder.Services.AddScoped(typeof(IStringKeyRepository<>), typeof(RedisRepository<>));
+builder.Services.AddScoped(typeof(ITempStore<>), typeof(RedisRepository<>));
+
+builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme).AddCookie(o =>
 {
-    o.InstanceName = Environment.GetEnvironmentVariable("REDIS_INSTANCE");
-    o.Configuration = Environment.GetEnvironmentVariable("REDIS_HOST") ?? "localhost";
-    
+    o.LoginPath = "/startup";
 });
-
-builder.Services.AddScoped(typeof(Repository<>));
-
-builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme).AddCookie(o=> {
-    o.LoginPath="/startup";
-});
-
 builder.Services.AddAuthorization();
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
+using (var scope = app.Services.CreateScope())
+{
+    var initializer = new ConsumerInitialization();
+    await initializer.Start(app.Services);
+}
+
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Error");
-    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
 }
 
@@ -40,15 +55,22 @@ app.UseStaticFiles();
 app.UseAuthentication();
 app.UseAuthorization();
 
+app.MapHealthChecks("/health", new()
+{
+    AllowCachingResponses = false
+});
+
 app.MapHub<ChatHub>("/chat");
 app.MapHub<MessageHub>("/msg");
+app.MapHub<NotifyHub>("/notify");
 
-app.MapPost("/startup", async (string username, HttpContext context) => {
-    
+app.MapPost("/startup", async (string username, HttpContext context) =>
+{
+
     var claim = new Claim(ClaimsIdentity.DefaultNameClaimType, username);
-    var identity = new ClaimsIdentity(new[] {claim}, "Cookies");
+    var identity = new ClaimsIdentity(new[] { claim }, "Cookies");
     var principal = new ClaimsPrincipal(identity);
-    
+
     await context.SignInAsync(principal);
 });
 
