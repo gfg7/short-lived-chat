@@ -24,6 +24,7 @@ namespace SimpleLiveChat.Services.Consumers
             using (var scope = _serviceProvider.CreateScope())
             {
                 var consumer = scope.ServiceProvider.GetService<EventConsumer>();
+                
                 if (@event.EventType == EventType.ShutDown)
                 {
                     consumer?.Dispose();
