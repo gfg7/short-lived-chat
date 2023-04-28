@@ -64,6 +64,6 @@ namespace SimpleLiveChat.Services.Consumers
             return Task.CompletedTask;
         }
 
-        public bool IsListeningEvents() =>  _isListening.Count > 0;
+        public bool ConsumingEventState() =>  _isListening.Count > 0;
     }
 }
