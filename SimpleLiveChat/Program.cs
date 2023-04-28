@@ -25,9 +25,8 @@ builder.Services.AddSingleton<ISubscriberProvider>(x => (RedisConnection)x.GetRe
 builder.Services.RegisterConsumers();
 builder.Services.AddScoped(typeof(IPublisher<>),typeof(EventPublisher<>));
 
-// создаются 2 разных инстанса RedisRepository :(
 builder.Services.AddScoped(typeof(IStringKeyRepository<>), typeof(RedisRepository<>));
-builder.Services.AddScoped(typeof(ITempStore<>), typeof(RedisRepository<>));
+builder.Services.AddScoped(typeof(ITempStore<>), x=> x.GetRequiredService(typeof(IStringKeyRepository<>)));
 
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme).AddCookie(o =>
 {
