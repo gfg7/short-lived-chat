@@ -16,7 +16,7 @@ namespace SimpleLiveChat.Services.Consumers.Base
         {
             if (@event.Node == _subscriber.Multiplexer.ClientName)
             {
-                await Task.FromCanceled(new CancellationToken());
+                await Task.FromCanceled(Task.Factory.CancellationToken);
             }
 
             await Task.CompletedTask;

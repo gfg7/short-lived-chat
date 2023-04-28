@@ -32,7 +32,7 @@ namespace SimpleLiveChat.Services.Consumers
             _logger.LogInformation($"Msg consumed on {Channel} channel", @event);
 
             var t = base.Consume(channel, @event);
-            if (!t.IsCompletedSuccessfully)
+            if (t.IsCanceled)
             {
                 return;
             }
