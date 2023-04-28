@@ -28,6 +28,8 @@ builder.Services.AddScoped(typeof(IPublisher<>),typeof(EventPublisher<>));
 builder.Services.AddScoped(typeof(IStringKeyRepository<>), typeof(RedisRepository<>));
 builder.Services.AddScoped(typeof(ITempStore<>), x=> x.GetRequiredService(typeof(IStringKeyRepository<>)));
 
+builder.Services.AddScoped<HubContextWrapper>();
+
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme).AddCookie(o =>
 {
     o.LoginPath = "/startup";
