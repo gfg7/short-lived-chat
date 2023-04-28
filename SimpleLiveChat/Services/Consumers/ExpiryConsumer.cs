@@ -12,25 +12,23 @@ using StackExchange.Redis;
 
 namespace SimpleLiveChat.Services.Consumers
 {
-    public class ExpiryConsumer : BaseEventConsumer<IHubEvent>
+    public class ExpiryConsumer : HubEventConsumer
     {
         private readonly IHubContext<NotifyHub, INotifyHub> _notify;
         private readonly IHubContext<ChatHub, IChatHub> _chat;
-
         public ExpiryConsumer(ISubscriberProvider provider,
                               ILogger<ExpiryConsumer> logger,
-                              IHubContext<NotifyHub, INotifyHub> notify,
-                              IHubContext<ChatHub, IChatHub> chat) : base(provider, logger)
+                              HubContextWrapper hubContextWrapper)
+                              : base(provider, logger, hubContextWrapper)
         {
-            _chat = chat;
-            _notify = notify;
+            _chat = hubContextWrapper.Get<ChatHub, IChatHub>();
+            _notify = hubContextWrapper.Get<NotifyHub, INotifyHub>();
         }
-
         public override string Channel => "__key*__:*";
 
         public override Action<RedisChannel, RedisValue> ConsumeEvent => SetUpCallback();
 
-        public override Task Consume(string channel, IHubEvent @event)
+        public override Task Consume(string channel, IExternalHubEvent @event)
         {
             _logger.LogInformation($"Msg consumed on {Channel} channel", @event);
 
@@ -51,7 +49,7 @@ namespace SimpleLiveChat.Services.Consumers
 
                 var @event = new Event()
                                 .SetChat(id)
-                                .SetTime(DateTime.UtcNow) as IHubEvent;
+                                .SetTime(DateTime.UtcNow) as IExternalHubEvent;
 
                 if (type is nameof(Chat) && value.ToString() is "expired")
                 {

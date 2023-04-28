@@ -22,10 +22,8 @@ namespace SimpleLiveChat.Services.Consumers
                 Consume(channel, @event).GetAwaiter().GetResult();
             };
 
-        public EventConsumer(ISubscriberProvider provider, IServiceProvider serviceProvider, ILogger<EventConsumer> logger)
-         : base(provider, serviceProvider, logger)
-        {
-        }
+        public EventConsumer(ISubscriberProvider provider, ILogger<EventConsumer> logger, HubContextWrapper hubContextWrapper)
+         : base(provider, logger, hubContextWrapper) { }
 
         public override async Task Consume(string channel, IExternalHubEvent @event)
         {
@@ -37,17 +35,14 @@ namespace SimpleLiveChat.Services.Consumers
                 return;
             }
 
-            using (var scope = _serviceProvider.CreateScope())
-            {
-                if (Enum.GetName(typeof(EventType), @event.EventType) is not null)
+            if (Enum.GetName(typeof(EventType), @event.EventType) is not null)
                 {
-                    var consumer = scope.ServiceProvider.GetRequiredService<IHubContext<NotifyHub, INotifyHub>>() as INotifyHub;
-                    await consumer.Notify(@event);
+                    var consumer = _hubContextWrapper.Get<NotifyHub, INotifyHub>();
+                    await consumer.Clients.All.Notify(@event);
                     return;
                 }
 
                 throw new NotSupportedException();
-            }
         }
     }
 }
