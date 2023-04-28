@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Text.Json;
 using SimpleLiveChat.Interfaces.Entities;
 using SimpleLiveChat.Interfaces.PublisherSubscriber;
@@ -8,12 +9,26 @@ using StackExchange.Redis;
 
 namespace SimpleLiveChat.Services.Consumers
 {
-    public class SubStateConsumer : BaseEventConsumer<IServerEvent>
+    public class SubStateConsumer : BaseEventConsumer<IServerEvent>, IConsumingState
     {
         private readonly IServiceProvider _serviceProvider;
+        private ConcurrentBag<bool> _isListening = new ConcurrentBag<bool>();
+        
         public SubStateConsumer(ISubscriberProvider provider, ILogger<SubStateConsumer> logger, IServiceProvider serviceProvider) : base(provider, logger)
         {
             _serviceProvider = serviceProvider;
+        }
+
+        public override void Subscribe()
+        {
+            base.Subscribe();
+            _isListening.Add(true);
+        }
+
+        public override void Dispose()
+        {
+            base.Dispose();
+            _isListening.Clear();
         }
 
         public override string Channel => "SubState";
@@ -34,19 +49,21 @@ namespace SimpleLiveChat.Services.Consumers
 
             using (var scope = _serviceProvider.CreateScope())
             {
-                var consumer = scope.ServiceProvider.GetService<EventConsumer>();
+                var consumer = scope.ServiceProvider.GetRequiredService<EventConsumer>();
 
                 if (@event.EventType == EventType.ShutDown)
                 {
-                    consumer?.Dispose();
+                    consumer.Dispose();
                 }
 
                 if (@event.EventType == EventType.StartUp)
                 {
-                    consumer?.Subscribe();
+                    consumer.Subscribe();
                 }
             }
             return Task.CompletedTask;
         }
+
+        public bool IsListeningEvents() =>  _isListening.Count > 0;
     }
 }
