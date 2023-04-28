@@ -10,7 +10,7 @@ using SimpleLiveChat.Interfaces.Hubs;
 
 namespace SimpleLiveChat.Services.Hubs
 {
-    public abstract class BaseHub<T> : Hub<T> where T : class, IHub
+    public abstract class BaseHub<T> : Hub<T> where T : class
     {
         protected string? GetUsername()
         {
