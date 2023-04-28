@@ -18,13 +18,13 @@ namespace SimpleLiveChat.Services.Consumers
 
         public override string Channel => "SubState";
 
-        public override Action<RedisChannel, RedisValue> ConsumeEvent => async (channel, value) =>
+        public override Action<RedisChannel, RedisValue> ConsumeEvent => (channel, value) =>
             {
                 var @event = JsonSerializer.Deserialize<ServerEvent>(value);
 
                 if (@event.Node != _subscriber.Multiplexer.ClientName)
                 {
-                    await Consume(channel, @event);
+                    Consume(channel, @event).GetAwaiter().GetResult();
                 }
             };
 

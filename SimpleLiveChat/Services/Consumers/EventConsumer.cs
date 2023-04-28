@@ -16,10 +16,10 @@ namespace SimpleLiveChat.Services.Consumers
     {
         public override string Channel => Environment.GetEnvironmentVariable("DEFAULT_TOPIC") ?? nameof(SimpleLiveChat);
 
-        public override Action<RedisChannel, RedisValue> ConsumeEvent => async (channel, value) =>
+        public override Action<RedisChannel, RedisValue> ConsumeEvent => (channel, value) =>
             {
                 var @event = JsonSerializer.Deserialize<Event>(value);
-                await Consume(channel, @event);
+                Consume(channel, @event).GetAwaiter().GetResult();
             };
 
         public EventConsumer(ISubscriberProvider provider, IServiceProvider serviceProvider, ILogger<EventConsumer> logger)

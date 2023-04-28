@@ -42,7 +42,7 @@ namespace SimpleLiveChat.Services.Consumers
 
         private Action<RedisChannel, RedisValue> SetUpCallback()
         {
-            return async (key, value) =>
+            return (key, value) =>
             {
                 _logger.LogInformation($"Event emerged on {Channel} channel", key, value);
 
@@ -58,7 +58,7 @@ namespace SimpleLiveChat.Services.Consumers
                     @event.SetPayload("Chat has ended because of inactivity :(");
                     @event.SetType(EventType.SystemNotif);
 
-                    await Consume(Channel, @event);
+                    Consume(Channel, @event).GetAwaiter().GetResult();
                     return;
                 }
 
