@@ -4,7 +4,7 @@ using SimpleLiveChat.Interfaces;
 
 namespace SimpleLiveChat.Models
 {
-    public record Chat : IEntity
+    public record Chat
     {
         public Guid Id {get;init;}
         public string Name {get;init;}
