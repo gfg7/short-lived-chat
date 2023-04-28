@@ -4,6 +4,7 @@ using SimpleLiveChat.Interfaces.PublisherSubscriber;
 using SimpleLiveChat.Models;
 using SimpleLiveChat.Models.Entity;
 using SimpleLiveChat.Services.Consumers.Base;
+using StackExchange.Redis;
 
 namespace SimpleLiveChat.Services.Consumers
 {
@@ -17,6 +18,16 @@ namespace SimpleLiveChat.Services.Consumers
 
         public override string Channel => "SubState";
 
+        public override Action<RedisChannel, RedisValue> ConsumeEvent => async (channel, value) =>
+            {
+                var @event = JsonSerializer.Deserialize<ServerEvent>(value);
+
+                if (@event.Node != _subscriber.Multiplexer.ClientName)
+                {
+                    await Consume(channel, @event);
+                }
+            };
+
         public override Task Consume(string channel, IServerEvent @event)
         {
             _logger.LogInformation($"Msg consumed on {Channel} channel", @event);
@@ -24,7 +35,7 @@ namespace SimpleLiveChat.Services.Consumers
             using (var scope = _serviceProvider.CreateScope())
             {
                 var consumer = scope.ServiceProvider.GetService<EventConsumer>();
-                
+
                 if (@event.EventType == EventType.ShutDown)
                 {
                     consumer?.Dispose();
@@ -36,19 +47,6 @@ namespace SimpleLiveChat.Services.Consumers
                 }
             }
             return Task.CompletedTask;
-        }
-
-        public override void SetUpCallback()
-        {
-            ConsumeEvent = async (channel, value) =>
-            {
-                var @event = JsonSerializer.Deserialize<ServerEvent>(value);
-
-                if (@event.Node != _subscriber.Multiplexer.ClientName)
-                {
-                    await Consume(channel, @event);
-                }
-            };
         }
     }
 }

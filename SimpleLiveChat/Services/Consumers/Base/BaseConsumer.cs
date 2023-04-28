@@ -19,8 +19,6 @@ namespace SimpleLiveChat.Services.Consumers.Base
 
         public void Subscribe()
         {
-            SetUpCallback();
-
             _logger.LogInformation($"Start up consumer {this.GetType().Name} listening {Channel} channel");
             
             _subscriber.Subscribe(
@@ -29,9 +27,7 @@ namespace SimpleLiveChat.Services.Consumers.Base
            );
         }
 
-        public Action<RedisChannel, RedisValue> ConsumeEvent;
-        public abstract void SetUpCallback();
-
+        public abstract Action<RedisChannel, RedisValue> ConsumeEvent {get;}
         public abstract Task Consume(string channel, T @event);
 
         public void Dispose()

@@ -28,21 +28,21 @@ namespace SimpleLiveChat.Services.Consumers
 
         public override string Channel => "__key*__:*";
 
+        public override Action<RedisChannel, RedisValue> ConsumeEvent => SetUpCallback();
+
         public override Task Consume(string channel, IHubEvent @event)
         {
             _logger.LogInformation($"Msg consumed on {Channel} channel", @event);
 
             _chat.Clients.Group(@event.ChatId).Leave(@event);
             _notify.Clients.Group(@event.ChatId).Notify(@event);
-            //cookie refresh chat group on user every 15 min lifetime + recreate onconnected
-            // new HubInvocationContext().Context. Использование фильтров концентратора?
 
             return Task.CompletedTask;
         }
 
-        public override void SetUpCallback()
+        private Action<RedisChannel, RedisValue> SetUpCallback()
         {
-            ConsumeEvent = async (key, value) =>
+            return async (key, value) =>
             {
                 _logger.LogInformation($"Event emerged on {Channel} channel", key, value);
 

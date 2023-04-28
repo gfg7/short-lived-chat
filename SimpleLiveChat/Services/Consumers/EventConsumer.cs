@@ -8,12 +8,20 @@ using SimpleLiveChat.Models;
 using SimpleLiveChat.Models.Entity;
 using SimpleLiveChat.Services.Consumers.Base;
 using SimpleLiveChat.Services.Hubs;
+using StackExchange.Redis;
 
 namespace SimpleLiveChat.Services.Consumers
 {
     public class EventConsumer : HubEventConsumer, IDelayed
     {
         public override string Channel => Environment.GetEnvironmentVariable("DEFAULT_TOPIC");
+
+        public override Action<RedisChannel, RedisValue> ConsumeEvent => async (channel, value) =>
+            {
+                var @event = JsonSerializer.Deserialize<Event>(value);
+                await Consume(channel, @event);
+            };
+
         public EventConsumer(ISubscriberProvider provider, IServiceProvider serviceProvider, ILogger<EventConsumer> logger)
          : base(provider, serviceProvider, logger)
         {
@@ -40,15 +48,6 @@ namespace SimpleLiveChat.Services.Consumers
 
                 throw new NotSupportedException();
             }
-        }
-
-        public override void SetUpCallback()
-        {
-            ConsumeEvent = async (channel, value) =>
-            {
-                var @event = JsonSerializer.Deserialize<Event>(value);
-                await Consume(channel, @event);
-            };
         }
     }
 }
