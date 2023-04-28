@@ -10,7 +10,7 @@ using SimpleLiveChat.Models.Entity;
 namespace SimpleLiveChat.Services.Hubs.Chats
 {
     [Authorize]
-    public partial class ChatHub : BaseHub<IChatHub>
+    public class ChatHub : BaseHub<IChatHub>
     {
         private readonly IStringKeyRepository<Chat> _chats;
         private readonly IHubContext<NotifyHub, INotifyHub> _notify;
@@ -75,6 +75,24 @@ namespace SimpleLiveChat.Services.Hubs.Chats
 
             await this.Clients.OthersInGroup(chatId).Leave(@event);
             await _notify.Clients.Group(chatId).Notify(@event);
+        }
+
+        protected IEnumerable<string> GetChats()
+        {
+            return this.Context.User.Claims
+            .Where(x => x.Type == nameof(Chat))
+            .Select(x => x.Value) ?? new List<string>();
+        }
+
+        protected void AddToChat(string chatId)
+        {
+            this.Context.User?.Claims.Append(new(nameof(Chat), chatId));
+        }
+
+        protected void RemoveFromChat(string chatId)
+        {
+            var user = this.Context.User.Identity as ClaimsIdentity;
+            user.TryRemoveClaim(new(nameof(Chat), chatId));
         }
     }
 }
