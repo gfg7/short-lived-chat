@@ -14,7 +14,7 @@ namespace SimpleLiveChat.Services.Consumers
 {
     public class EventConsumer : HubEventConsumer, IDelayed
     {
-        public override string Channel => Environment.GetEnvironmentVariable("DEFAULT_TOPIC");
+        public override string Channel => Environment.GetEnvironmentVariable("DEFAULT_TOPIC") ?? nameof(SimpleLiveChat);
 
         public override Action<RedisChannel, RedisValue> ConsumeEvent => async (channel, value) =>
             {
