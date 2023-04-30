@@ -11,24 +11,29 @@ namespace SimpleLiveChat.Services.Consumers
 {
     public class SubStateConsumer : BaseEventConsumer<IServerEvent>, IConsumingState
     {
-        private readonly IServiceProvider _serviceProvider;
-        private ConcurrentBag<bool> _isListening = new ConcurrentBag<bool>();
-        
-        public SubStateConsumer(ISubscriberProvider provider, ILogger<SubStateConsumer> logger, IServiceProvider serviceProvider) : base(provider, logger)
+        private ConcurrentBag<bool> _isListening = new();
+        private CancellationTokenSource _eventSubscriptionCancellation = new();
+        private Task _stopEventProcessing = null;
+        private EventConsumer _consumer;
+
+        public SubStateConsumer(ISubscriberProvider provider, ILogger<SubStateConsumer> logger, EventConsumer consumer) : base(provider, logger)
         {
-            _serviceProvider = serviceProvider;
+            _consumer = consumer;
         }
 
-        public override void Subscribe()
+        private async Task StopListeningEvents(CancellationToken token)
         {
-            base.Subscribe();
-            _isListening.Add(true);
-        }
+            await Task.Delay(TimeSpan.FromMinutes(15));
 
-        public override void Dispose()
-        {
-            base.Dispose();
-            _isListening.Clear();
+            if (!token.IsCancellationRequested)
+            {
+                _logger.LogInformation($"Event broadcast disposing is starting");
+                _isListening.Clear();
+                _consumer.Dispose();
+                return;
+            }
+
+            _logger.LogInformation($"Dispose of event broadcast is cancelled");
         }
 
         public override string Channel => "SubState";
@@ -43,27 +48,36 @@ namespace SimpleLiveChat.Services.Consumers
                 }
             };
 
-        public override Task Consume(string channel, IServerEvent @event)
+        public async override Task Consume(string channel, IServerEvent @event)
         {
             _logger.LogInformation($"Msg consumed on {Channel} channel", @event);
 
-            using (var scope = _serviceProvider.CreateScope())
+            if (@event.EventType == EventType.StopListening)
             {
-                var consumer = scope.ServiceProvider.GetRequiredService<EventConsumer>();
+                _logger.LogInformation($"Subscriber {@event.Node} is stopping");
+                _stopEventProcessing = StopListeningEvents(_eventSubscriptionCancellation.Token);
+                await _stopEventProcessing;
+            }
 
-                if (@event.EventType == EventType.ShutDown)
+            if (@event.EventType == EventType.Listening)
+            {
+                if (_stopEventProcessing is not null)
                 {
-                    consumer.Dispose();
+                    _logger.LogInformation($"Subscriber {@event.Node} is still listening");
+                    _eventSubscriptionCancellation.Cancel();
+                    _eventSubscriptionCancellation.TryReset();
+                    return;
                 }
 
-                if (@event.EventType == EventType.StartUp)
+                if (!IsConsumingEvent())
                 {
-                    consumer.Subscribe();
+                    _logger.LogInformation($"Subscribers found, start up event broadcast");
+                    _isListening.Add(true);
+                    _consumer.Subscribe();
                 }
             }
-            return Task.CompletedTask;
         }
 
-        public bool ConsumingEventState() =>  _isListening.Count > 0;
+        public bool IsConsumingEvent() => _isListening.Count > 0;
     }
 }
