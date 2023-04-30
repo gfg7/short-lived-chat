@@ -35,13 +35,13 @@ namespace SimpleLiveChat.Services.Configuration
 
         private async Task PushStartUpEvent()
         {
-            var @event = new ServerEvent().SetType<ServerEvent>(EventType.StartUp);
+            var @event = new ServerEvent().SetType<ServerEvent>(EventType.Listening);
             await _publisher.Publish(@event, "SubState");
         }
 
         private async Task PushShutDownEvent()
         {
-            var @event = new ServerEvent().SetType<ServerEvent>(EventType.ShutDown);
+            var @event = new ServerEvent().SetType<ServerEvent>(EventType.StopListening);
             await _publisher.Publish(@event, "SubState");
         }
     }
