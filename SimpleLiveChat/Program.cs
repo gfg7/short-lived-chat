@@ -18,15 +18,21 @@ builder.Services.AddEndpointsApiExplorer();
 
 builder.Services.AddHostedService<ServerStateHandler>();
 
-builder.Services.AddLogging();
+builder.Services.AddLogging(o =>
+{
+    o.AddConsole(c =>
+    {
+        c.TimestampFormat = "[yyyy-MM-dd HH:mm:ss]";
+    });
+});
 builder.Services.AddSingleton<IDatabaseProvider, RedisConnection>();
 builder.Services.AddSingleton<ISubscriberProvider>(x => (RedisConnection)x.GetRequiredService<IDatabaseProvider>());
 
 builder.Services.RegisterConsumers();
-builder.Services.AddScoped(typeof(IPublisher<>),typeof(EventPublisher<>));
+builder.Services.AddScoped(typeof(IPublisher<>), typeof(EventPublisher<>));
 
 builder.Services.AddScoped(typeof(IStringKeyRepository<>), typeof(RedisRepository<>));
-builder.Services.AddScoped(typeof(ITempStore<>), x=> x.GetRequiredService(typeof(IStringKeyRepository<>)));
+builder.Services.AddScoped(typeof(ITempStore<>), typeof(RedisRepository<>));
 
 builder.Services.AddScoped<HubContextWrapper>();
 
