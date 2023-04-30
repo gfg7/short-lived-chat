@@ -23,7 +23,7 @@ namespace SimpleLiveChat.Services.Consumers
 
         private async Task StopListeningEvents(CancellationToken token)
         {
-            await Task.Delay(TimeSpan.FromMinutes(15));
+            await Task.Delay(TimeSpan.FromSeconds(int.Parse(Environment.GetEnvironmentVariable("SUB_ECHO_TIMEOUT") ?? "60")));
 
             if (!token.IsCancellationRequested)
             {
@@ -61,7 +61,7 @@ namespace SimpleLiveChat.Services.Consumers
 
             if (@event.EventType == EventType.Listening)
             {
-                if (_stopEventProcessing is not null)
+                if (!_stopEventProcessing?.IsCompleted ?? false)
                 {
                     _logger.LogInformation($"Subscriber {@event.Node} is still listening");
                     _eventSubscriptionCancellation.Cancel();

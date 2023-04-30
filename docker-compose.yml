@@ -8,6 +8,7 @@ services:
     container_name: server
     environment:
       - REDIS_HOST=redis:6379
+      - SUB_ECHO_TIMEOUT=60
     ports:
     - "5050:80"
     networks:
