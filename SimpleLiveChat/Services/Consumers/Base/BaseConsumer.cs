@@ -33,7 +33,7 @@ namespace SimpleLiveChat.Services.Consumers.Base
         public virtual void Dispose()
         {
             _logger.LogInformation($"Shut down consumer {this.GetType().Name} listening {Channel} channel");
-            _subscriber.Unsubscribe(Channel, ConsumeEvent);
+            _subscriber.Unsubscribe(Channel);
         }
     }
 }
