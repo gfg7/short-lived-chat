@@ -6,7 +6,6 @@ using SimpleLiveChat.Interfaces.PublisherSubscriber;
 using SimpleLiveChat.Interfaces.Repository;
 using SimpleLiveChat.Services.Configuration;
 using SimpleLiveChat.Services.Hubs;
-using SimpleLiveChat.Services.Hubs.Chats;
 using SimpleLiveChat.Services.Publisher;
 using SimpleLiveChat.Services.Repository;
 
