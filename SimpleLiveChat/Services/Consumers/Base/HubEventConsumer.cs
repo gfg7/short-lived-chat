@@ -15,7 +15,7 @@ namespace SimpleLiveChat.Services.Consumers.Base
 
         public override async Task Consume(string value, IExternalHubEvent @event)
         {
-            if (@event.Node == _subscriber.Multiplexer.ClientName)
+            if (IsExternalNodeEvent(@event))
             {
                 await Task.FromCanceled(Task.Factory.CancellationToken);
             }

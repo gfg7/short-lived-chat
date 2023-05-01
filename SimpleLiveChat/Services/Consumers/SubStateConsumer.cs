@@ -43,7 +43,7 @@ namespace SimpleLiveChat.Services.Consumers
             {
                 var @event = JsonSerializer.Deserialize<ServerEvent>(value);
 
-                if (@event.Node != _subscriber.Multiplexer.ClientName)
+                if (!IsExternalNodeEvent(@event))
                 {
                     Consume(channel, @event).GetAwaiter().GetResult();
                 }
