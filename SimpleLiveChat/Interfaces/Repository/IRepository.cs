@@ -7,5 +7,5 @@ namespace SimpleLiveChat.Interfaces.Repository
         Task<K> Remove(T key);
     }
 
-    public interface IStringKeyRepository<K> : IRepository<string, K> { }
+    public interface IStringKeyRepository<K> : IRepository<string, K>, ITempStore<string> { }
 }

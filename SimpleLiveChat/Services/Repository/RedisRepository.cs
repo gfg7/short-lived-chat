@@ -8,7 +8,7 @@ using StackExchange.Redis;
 
 namespace SimpleLiveChat.Services.Repository
 {
-    public class RedisRepository<T> : IStringKeyRepository<T>, ITempStore<string>
+    public class RedisRepository<T> : IStringKeyRepository<T>
     {
         private readonly IDatabase _cache;
 

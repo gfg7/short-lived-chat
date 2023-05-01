@@ -10,10 +10,11 @@ namespace SimpleLiveChat.Services.Configuration
     {
         public static IServiceCollection RegisterConsumers(this IServiceCollection services)
         {
-            services.AddScoped<SubStateConsumer>();
+            services.AddSingleton<SubStateConsumer>();
+            services.AddSingleton<ExpiryConsumer>();
+
             services.AddScoped<EventConsumer>();
             services.AddScoped(typeof(IConsumingState), x => x.GetRequiredService<SubStateConsumer>());
-            services.AddScoped<ExpiryConsumer>();
 
             return services;
         }
@@ -29,8 +30,10 @@ namespace SimpleLiveChat.Services.Configuration
 
             foreach (var consumer in consumers)
             {
-                var service = scope.ServiceProvider.GetRequiredService(consumer) as IBaseConsumer;
-                service.Subscribe();
+                if (scope.ServiceProvider.GetRequiredService(consumer) is IBaseConsumer service)
+                {
+                    service.Subscribe();
+                }
             }
         }
 
