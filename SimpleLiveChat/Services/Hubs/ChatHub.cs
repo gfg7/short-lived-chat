@@ -6,15 +6,16 @@ using SimpleLiveChat.Interfaces.Hubs;
 using SimpleLiveChat.Interfaces.Repository;
 using SimpleLiveChat.Models;
 using SimpleLiveChat.Models.Entity;
+using SimpleLiveChat.Services.Repository;
 
 namespace SimpleLiveChat.Services.Hubs
 {
     [Authorize]
     public class ChatHub : BaseHub<IChatHub>
     {
-        private readonly IStringKeyRepository<Chat> _chats;
+        private readonly ChatActivityService _chats;
         private readonly IHubContext<NotifyHub, INotifyHub> _notify;
-        public ChatHub(IStringKeyRepository<Chat> chats, IHubContext<NotifyHub, INotifyHub> notify)
+        public ChatHub(ChatActivityService chats, IHubContext<NotifyHub, INotifyHub> notify)
         {
             _chats = chats;
             _notify = notify;
@@ -23,11 +24,10 @@ namespace SimpleLiveChat.Services.Hubs
         public async Task CreateChat(string chat)
         {
             var newChat = new Chat(chat);
-            await _chats.Add(newChat.Id.ToString(), newChat);
+            await _chats.CreateChat(newChat, GetUsername());
 
             var connId = this.Context.ConnectionId;
             await this.Groups.AddToGroupAsync(connId, newChat.Id.ToString());
-            AddToChat(newChat.Id.ToString());
 
             var @event = new Event()
                 .SetChat(newChat.Id.ToString())
@@ -40,16 +40,11 @@ namespace SimpleLiveChat.Services.Hubs
 
         public async Task JoinIn(string chatId)
         {
-            if (GetChats().Contains(chatId))
-            {
-                return;
-            }
-
             var connId = this.Context.ConnectionId;
             var username = GetUsername();
 
             await this.Groups.AddToGroupAsync(connId, chatId);
-            AddToChat(chatId);
+            await _chats.JoinInChat(chatId, username, DateTime.UtcNow);
 
             var @event = new Event()
                 .SetChat(chatId)
@@ -66,7 +61,7 @@ namespace SimpleLiveChat.Services.Hubs
             var connId = this.Context.ConnectionId;
 
             await this.Groups.RemoveFromGroupAsync(connId, chatId);
-            RemoveFromChat(chatId);
+            await _chats.LeaveChat(chatId, username);
 
             var @event = new Event()
                 .SetChat(chatId)
@@ -75,24 +70,6 @@ namespace SimpleLiveChat.Services.Hubs
 
             await this.Clients.OthersInGroup(chatId).Leave(@event);
             await _notify.Clients.Group(chatId).Notify(@event);
-        }
-
-        protected IEnumerable<string> GetChats()
-        {
-            return this.Context.User.Claims
-            .Where(x => x.Type == nameof(Chat))
-            .Select(x => x.Value) ?? new List<string>();
-        }
-
-        protected void AddToChat(string chatId)
-        {
-            this.Context.User?.Claims.Append(new(nameof(Chat), chatId));
-        }
-
-        protected void RemoveFromChat(string chatId)
-        {
-            var user = this.Context.User.Identity as ClaimsIdentity;
-            user.TryRemoveClaim(new(nameof(Chat), chatId));
         }
     }
 }
