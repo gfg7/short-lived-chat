@@ -13,12 +13,13 @@ namespace SimpleLiveChat.Services.Consumers
     {
         private ConcurrentBag<bool> _isListening = new();
         private CancellationTokenSource _eventSubscriptionCancellation = new();
-        private Task _stopEventProcessing = null;
+        private Task _stopEventProcessing;
         private EventConsumer _consumer;
 
         public SubStateConsumer(ISubscriberProvider provider, ILogger<SubStateConsumer> logger, EventConsumer consumer) : base(provider, logger)
         {
             _consumer = consumer;
+            _stopEventProcessing = StopListeningEvents(_eventSubscriptionCancellation.Token);
         }
 
         private async Task StopListeningEvents(CancellationToken token)
@@ -55,17 +56,21 @@ namespace SimpleLiveChat.Services.Consumers
             if (@event.EventType == EventType.StopListening)
             {
                 _logger.LogInformation($"Subscriber {@event.Node} is stopping");
-                _stopEventProcessing = StopListeningEvents(_eventSubscriptionCancellation.Token);
-                await _stopEventProcessing;
+
+                if (IsConsumingEvent() && (_stopEventProcessing.IsCompleted || _stopEventProcessing.Status == TaskStatus.WaitingForActivation))
+                {
+                    await _stopEventProcessing;
+                }
+
+                return;
             }
 
             if (@event.EventType == EventType.Listening)
             {
-                if (!_stopEventProcessing?.IsCompleted ?? false)
+                if (!_stopEventProcessing.IsCompleted)
                 {
                     _logger.LogInformation($"Subscriber {@event.Node} is still listening");
                     _eventSubscriptionCancellation.Cancel();
-                    _eventSubscriptionCancellation.TryReset();
                     return;
                 }
 
