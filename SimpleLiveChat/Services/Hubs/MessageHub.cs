@@ -5,6 +5,7 @@ using SimpleLiveChat.Interfaces.PublisherSubscriber;
 using SimpleLiveChat.Interfaces.Repository;
 using SimpleLiveChat.Models;
 using SimpleLiveChat.Models.Entity;
+using SimpleLiveChat.Services.Repository;
 
 namespace SimpleLiveChat.Services.Hubs
 {
@@ -12,12 +13,12 @@ namespace SimpleLiveChat.Services.Hubs
     class MessageHub : BaseHub<IMessageHub>
     {
         private readonly IHubContext<NotifyHub, INotifyHub> _notify;
-        private readonly ITempStore<string> _tempStore;
+        private readonly ChatActivityService _chats;
 
-        public MessageHub(IHubContext<NotifyHub, INotifyHub> notify, ITempStore<string> tempStore)
+        public MessageHub(IHubContext<NotifyHub, INotifyHub> notify, ChatActivityService chats)
         {
+            _chats = chats;
             _notify = notify;
-            _tempStore = tempStore;
         }
 
         public async Task Send(string chatId, string message)
@@ -32,7 +33,7 @@ namespace SimpleLiveChat.Services.Hubs
             await _notify.Clients.All.Notify(@event);
 
             await this.Clients.Group(chatId).Send(chatId, username, message);
-            await _tempStore.Refresh(chatId, TimeSpan.FromMinutes(15));
+            await _chats.SentMessage(chatId, username);
         }
 
         public async Task SendPrivate(string chatId, string toUser, string message)
@@ -46,6 +47,7 @@ namespace SimpleLiveChat.Services.Hubs
                 .SetType(EventType.PrivateMessage);
 
             await _notify.Clients.All.Notify(@event);
+            await _chats.SentMessage(chatId, username, true);
 
             await this.Clients.User(toUser).SendPrivate(chatId, username, message);
         }

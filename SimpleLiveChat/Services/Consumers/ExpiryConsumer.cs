@@ -43,23 +43,34 @@ namespace SimpleLiveChat.Services.Consumers
             {
                 _logger.LogInformation($"Event emerged on {Channel} channel", key, value);
 
-                var id = KeyExtractor.GetKey(key.ToString());
-                var type = KeyExtractor.GetEntity(key.ToString());
+                var type = KeyService.GetKeyPart(key.ToString());
 
-                var @event = new Event()
-                                .SetChat(id)
-                                .SetTime(DateTime.UtcNow) as IExternalHubEvent;
-
-                if (type is nameof(Chat) && value.ToString() is "expired")
+                if (!Enum.IsDefined(typeof(CacheKeyType), type))
                 {
-                    @event.SetPayload("Chat has ended because of inactivity :(");
-                    @event.SetType(EventType.SystemNotif);
-
-                    Consume(Channel, @event).GetAwaiter().GetResult();
-                    return;
+                    throw new NotSupportedException($"Consumed {type} cache key type is not defined");
                 }
 
-                throw new NotSupportedException();
+                var id = KeyService.GetKeyPart(key.ToString(), 1);
+                var @event = new Event()
+                .SetTime(DateTime.UtcNow)
+                .SetChat(id)
+                .SetType(EventType.SystemNotif);
+
+                if (type is nameof(CacheKeyType.Chat))
+                {
+                    @event = @event
+                    .SetPayload("Chat has ended because of inactivity :(");
+                }
+
+                if (type is nameof(CacheKeyType.Activity))
+                {
+                    var username = KeyService.GetKeyPart(key.ToString(), 2);
+
+                    @event = @event
+                    .SetPayload($"User {username} is kicked out because of inactivity :(");
+                }
+
+                Consume(Channel, @event).GetAwaiter().GetResult();
             };
         }
     }

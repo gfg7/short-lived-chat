@@ -17,12 +17,9 @@ namespace SimpleLiveChat.Services.Repository
             _cache = provider.Database;
         }
 
-        private string GetFullKey(string key) => string.Join(":", key, typeof(T).Name);
-
         public async Task<T> Add(string key, T obj, TimeSpan? timeout = null)
         {
             var value = JsonSerializer.Serialize<T>(obj);
-            key = GetFullKey(key);
             await _cache.StringSetAsync(key, value, timeout);
 
             return obj;
@@ -30,15 +27,11 @@ namespace SimpleLiveChat.Services.Repository
 
         public async Task Refresh(string key, TimeSpan timeout)
         {
-            key = GetFullKey(key);
-
             await _cache.KeyExpireAsync(key, timeout);
         }
 
         public async Task<T> Get(string key)
         {
-            key = GetFullKey(key);
-
             var temp = await _cache.StringGetAsync(key);
 
             if (!temp.HasValue) {
@@ -50,8 +43,6 @@ namespace SimpleLiveChat.Services.Repository
 
         public async Task<T> Remove(string key)
         {
-            key = GetFullKey(key);
-
             var temp = await Get(key);
             await _cache.KeyDeleteAsync(key);
 
