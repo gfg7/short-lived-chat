@@ -27,6 +27,8 @@ namespace SimpleLiveChat.Services.Consumers.Base
            );
         }
 
+        public bool IsExternalNodeEvent(IServerEvent @event) => @event.Node == _subscriber.Multiplexer.ClientName;
+
         public abstract Action<RedisChannel, RedisValue> ConsumeEvent {get;}
         public abstract Task Consume(string channel, T @event);
 
