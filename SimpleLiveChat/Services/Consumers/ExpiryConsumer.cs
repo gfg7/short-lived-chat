@@ -7,7 +7,6 @@ using SimpleLiveChat.Models;
 using SimpleLiveChat.Models.Entity;
 using SimpleLiveChat.Services.Consumers.Base;
 using SimpleLiveChat.Services.Hubs;
-using SimpleLiveChat.Services.Hubs.Chats;
 using StackExchange.Redis;
 
 namespace SimpleLiveChat.Services.Consumers

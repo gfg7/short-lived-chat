@@ -7,7 +7,7 @@ using SimpleLiveChat.Interfaces.Repository;
 using SimpleLiveChat.Models;
 using SimpleLiveChat.Models.Entity;
 
-namespace SimpleLiveChat.Services.Hubs.Chats
+namespace SimpleLiveChat.Services.Hubs
 {
     [Authorize]
     public class ChatHub : BaseHub<IChatHub>
