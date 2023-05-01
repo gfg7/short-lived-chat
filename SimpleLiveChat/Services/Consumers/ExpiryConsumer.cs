@@ -43,8 +43,8 @@ namespace SimpleLiveChat.Services.Consumers
             {
                 _logger.LogInformation($"Event emerged on {Channel} channel", key, value);
 
-                var id = KeyExtractor.GetKey(key.ToString());
-                var type = KeyExtractor.GetEntity(key.ToString());
+                var id = KeyService.GetKeyPart(key.ToString());
+                var type = KeyService.GetKeyPart(key.ToString(), 1);
 
                 var @event = new Event()
                                 .SetChat(id)
