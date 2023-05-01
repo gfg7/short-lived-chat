@@ -24,6 +24,7 @@ builder.Services.AddLogging(o =>
         c.TimestampFormat = "[yyyy-MM-dd HH:mm:ss]";
     });
 });
+
 builder.Services.AddSingleton<IDatabaseProvider, RedisConnection>();
 builder.Services.AddSingleton<ISubscriberProvider>(x => (RedisConnection)x.GetRequiredService<IDatabaseProvider>());
 
@@ -31,7 +32,6 @@ builder.Services.RegisterConsumers();
 builder.Services.AddScoped(typeof(IPublisher<>), typeof(EventPublisher<>));
 
 builder.Services.AddScoped(typeof(IStringKeyRepository<>), typeof(RedisRepository<>));
-builder.Services.AddScoped(typeof(ITempStore<>), x=> x.GetRequiredService(typeof(IStringKeyRepository<>)));
 
 builder.Services.AddScoped<ChatActivityService>();
 builder.Services.AddScoped<HubContextWrapper>();
@@ -71,12 +71,16 @@ app.MapHub<NotifyHub>("/notify");
 
 app.MapPost("/startup", async (string username, HttpContext context) =>
 {
-
     var claim = new Claim(ClaimsIdentity.DefaultNameClaimType, username);
     var identity = new ClaimsIdentity(new[] { claim }, "Cookies");
     var principal = new ClaimsPrincipal(identity);
 
     await context.SignInAsync(principal);
+});
+
+app.MapGet("/mychats", async (ChatActivityService activityService, HttpContext context) => {
+    var username = context.User.Identity.Name;
+    await activityService.GetUserChats(username);
 });
 
 app.MapDelete("/leave", async (HttpContext context) =>
