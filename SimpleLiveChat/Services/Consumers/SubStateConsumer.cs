@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Text.Json;
 using SimpleLiveChat.Interfaces.Entities;
 using SimpleLiveChat.Interfaces.PublisherSubscriber;
@@ -8,12 +9,32 @@ using StackExchange.Redis;
 
 namespace SimpleLiveChat.Services.Consumers
 {
-    public class SubStateConsumer : BaseEventConsumer<IServerEvent>
+    public class SubStateConsumer : BaseEventConsumer<IServerEvent>, IConsumingState
     {
-        private readonly IServiceProvider _serviceProvider;
-        public SubStateConsumer(ISubscriberProvider provider, ILogger<SubStateConsumer> logger, IServiceProvider serviceProvider) : base(provider, logger)
+        private ConcurrentBag<bool> _isListening = new();
+        private CancellationTokenSource _eventSubscriptionCancellation = new();
+        private Task _stopEventProcessing;
+        private EventConsumer _consumer;
+
+        public SubStateConsumer(ISubscriberProvider provider, ILogger<SubStateConsumer> logger, EventConsumer consumer) : base(provider, logger)
         {
-            _serviceProvider = serviceProvider;
+            _consumer = consumer;
+            _stopEventProcessing = StopListeningEvents(_eventSubscriptionCancellation.Token);
+        }
+
+        private async Task StopListeningEvents(CancellationToken token)
+        {
+            await Task.Delay(TimeSpan.FromSeconds(int.Parse(Environment.GetEnvironmentVariable("SUB_ECHO_TIMEOUT") ?? "60")));
+
+            if (!token.IsCancellationRequested)
+            {
+                _logger.LogInformation($"Event broadcast disposing is starting");
+                _isListening.Clear();
+                _consumer.Dispose();
+                return;
+            }
+
+            _logger.LogInformation($"Dispose of event broadcast is cancelled");
         }
 
         public override string Channel => "SubState";
@@ -22,31 +43,46 @@ namespace SimpleLiveChat.Services.Consumers
             {
                 var @event = JsonSerializer.Deserialize<ServerEvent>(value);
 
-                if (@event.Node != _subscriber.Multiplexer.ClientName)
+                if (!IsExternalNodeEvent(@event))
                 {
                     Consume(channel, @event).GetAwaiter().GetResult();
                 }
             };
 
-        public override Task Consume(string channel, IServerEvent @event)
+        public async override Task Consume(string channel, IServerEvent @event)
         {
             _logger.LogInformation($"Msg consumed on {Channel} channel", @event);
 
-            using (var scope = _serviceProvider.CreateScope())
+            if (@event.EventType == EventType.StopListening)
             {
-                var consumer = scope.ServiceProvider.GetService<EventConsumer>();
+                _logger.LogInformation($"Subscriber {@event.Node} is stopping");
 
-                if (@event.EventType == EventType.ShutDown)
+                if (IsConsumingEvent() && (_stopEventProcessing.IsCompleted || _stopEventProcessing.Status == TaskStatus.WaitingForActivation))
                 {
-                    consumer?.Dispose();
+                    await _stopEventProcessing;
                 }
 
-                if (@event.EventType == EventType.StartUp)
+                return;
+            }
+
+            if (@event.EventType == EventType.Listening)
+            {
+                if (!_stopEventProcessing.IsCompleted)
                 {
-                    consumer?.Subscribe();
+                    _logger.LogInformation($"Subscriber {@event.Node} is still listening");
+                    _eventSubscriptionCancellation.Cancel();
+                    return;
+                }
+
+                if (!IsConsumingEvent())
+                {
+                    _logger.LogInformation($"Subscribers found, start up event broadcast");
+                    _isListening.Add(true);
+                    _consumer.Subscribe();
                 }
             }
-            return Task.CompletedTask;
         }
+
+        public bool IsConsumingEvent() => _isListening.Count > 0;
     }
 }

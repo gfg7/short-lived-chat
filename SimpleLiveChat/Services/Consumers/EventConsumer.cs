@@ -42,7 +42,7 @@ namespace SimpleLiveChat.Services.Consumers
                     return;
                 }
 
-                throw new NotSupportedException();
+                throw new NotSupportedException($"Consumed {nameof(@event.EventType)} event type is not supported");
         }
     }
 }

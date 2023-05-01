@@ -8,19 +8,21 @@ namespace SimpleLiveChat.Services.Hubs
 {
     public class NotifyHub : BaseHub<INotifyHub>
     {
-        private readonly IPublisher? _publisher;
+        private readonly IPublisher _publisher;
+        private readonly IConsumingState _consumingState;
 
-        public NotifyHub(IPublisher publisher, IServiceProvider serviceProvider)
+        public NotifyHub(IPublisher publisher, IConsumingState consumingState)
         {
-            if (serviceProvider.GetService<EventConsumer>() is not null)
-            {
-                _publisher = publisher;
-            }
+            _publisher = publisher;
         }
 
         public async Task Notify(ILocalEvent @event)
         {
-            await _publisher?.Publish(@event);
+            if (_consumingState.IsConsumingEvent())
+            {
+                await _publisher.Publish(@event);
+            }
+
             await Clients.All.Notify(@event);
         }
     }

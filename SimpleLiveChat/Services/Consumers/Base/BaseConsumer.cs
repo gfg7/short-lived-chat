@@ -17,7 +17,7 @@ namespace SimpleLiveChat.Services.Consumers.Base
             _logger = logger;
         }
 
-        public void Subscribe()
+        public virtual void Subscribe()
         {
             _logger.LogInformation($"Start up consumer {this.GetType().Name} listening {Channel} channel");
             
@@ -27,13 +27,15 @@ namespace SimpleLiveChat.Services.Consumers.Base
            );
         }
 
+        public bool IsExternalNodeEvent(IServerEvent @event) => @event.Node == _subscriber.Multiplexer.ClientName;
+
         public abstract Action<RedisChannel, RedisValue> ConsumeEvent {get;}
         public abstract Task Consume(string channel, T @event);
 
-        public void Dispose()
+        public virtual void Dispose()
         {
             _logger.LogInformation($"Shut down consumer {this.GetType().Name} listening {Channel} channel");
-            _subscriber.Unsubscribe(Channel, ConsumeEvent);
+            _subscriber.Unsubscribe(Channel);
         }
     }
 }

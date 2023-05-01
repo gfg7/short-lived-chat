@@ -1,4 +1,5 @@
 using SimpleLiveChat.Interfaces.PublisherSubscrib;
+using SimpleLiveChat.Interfaces.PublisherSubscriber;
 using SimpleLiveChat.Services.Consumers;
 using SimpleLiveChat.Services.Consumers.Base;
 using SimpleLiveChat.Services.Hubs;
@@ -11,6 +12,7 @@ namespace SimpleLiveChat.Services.Configuration
         {
             services.AddScoped<SubStateConsumer>();
             services.AddScoped<EventConsumer>();
+            services.AddScoped(typeof(IConsumingState), x => x.GetRequiredService<SubStateConsumer>());
             services.AddScoped<ExpiryConsumer>();
 
             return services;
